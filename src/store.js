@@ -1,10 +1,8 @@
-/**
- * Хранилище состояния приложения
- */
 class Store {
   constructor(initState = {}) {
     this.state = initState;
     this.listeners = []; // Слушатели изменений состояния
+    this.usedCodes = new Set(initState.list.map((item) => item.code));
   }
 
   /**
@@ -14,10 +12,11 @@ class Store {
    */
   subscribe(listener) {
     this.listeners.push(listener);
+
     // Возвращается функция для удаления добавленного слушателя
     return () => {
-      this.listeners = this.listeners.filter(item => item !== listener);
-    }
+      this.listeners = this.listeners.filter((item) => item !== listener);
+    };
   }
 
   /**
@@ -42,11 +41,18 @@ class Store {
    * Добавление новой записи
    */
   addItem() {
+    const newCode = this.generateUniqueCode();
+    const newItem = {
+      code: newCode,
+      title: "Новая запись",
+      clicked: 0,
+    };
+
     this.setState({
       ...this.state,
-      list: [...this.state.list, {code: this.state.list.length + 1, title: 'Новая запись'}]
-    })
-  };
+      list: [...this.state.list, newItem],
+    });
+  }
 
   /**
    * Удаление записи по коду
@@ -55,9 +61,9 @@ class Store {
   deleteItem(code) {
     this.setState({
       ...this.state,
-      list: this.state.list.filter(item => item.code !== code)
-    })
-  };
+      list: this.state.list.filter((item) => item.code !== code),
+    });
+  }
 
   /**
    * Выделение записи по коду
@@ -66,13 +72,30 @@ class Store {
   selectItem(code) {
     this.setState({
       ...this.state,
-      list: this.state.list.map(item => {
+      list: this.state.list.map((item) => {
         if (item.code === code) {
           item.selected = !item.selected;
+          item.clicked++;
+        } else {
+          item.selected = false;
         }
+
         return item;
-      })
-    })
+      }),
+    });
+  }
+
+  generateUniqueCode() {
+    const existingCodes = this.state.list.map((item) => item.code);
+    let code = Math.max(...existingCodes) + 1;
+
+    while (this.usedCodes.has(code)) {
+      code++;
+    }
+
+    this.usedCodes.add(code);
+
+    return code;
   }
 }
 
